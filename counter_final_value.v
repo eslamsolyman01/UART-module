@@ -13,7 +13,7 @@ module modulus_counter_parametrized #(parameter counter_final_value = 16, parame
     //seq part
         always @(posedge clk, negedge reset_n) begin
             if (~reset_n)
-                q_reg <= 'd0;
+                q_reg <= 'd1; //in order to make the counted value matches the final_value from the first time
             else
                 q_reg <= q_next;
         end
