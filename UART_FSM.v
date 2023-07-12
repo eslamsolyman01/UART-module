@@ -27,23 +27,23 @@ module UART_RX #(parameters)
     reg sampled_bit;
 
     //ticker (mod 16 counter), bit_counter 
-        reg [:0] bit_counter_out, ticker_out;
+        reg [3:0] bit_counter_out, ticker_out;
     //ticker and bit_counter related signals
-    reg ticker_enable, ticker_reset_n;
-    reg bit_counter_en, bit_counter_reset_n;
-    
-    localparam bit_counter_final_value = 8;
-    localparam ticker_final_value = 16;
+        reg ticker_en, ticker_reset_n;
+        reg bit_counter_en, bit_counter_reset_n;
+        
+        localparam bit_counter_final_value = 10;
+        localparam ticker_final_value = 16;
     
     //ticker and bit_counter inistantiations
         modulus_counter_parametrized #(.counter_final_value(ticker_final_value)) ticker 
-            (.clk(clk), .reset_n(ticker_reset_n), .enable(ticker_enable), .counter_out(ticker_out));
+            (.clk(clk), .reset_n(ticker_reset_n), .enable(ticker_en), .counter_out(ticker_out));
 
         modulus_counter_parametrized #(.counter_final_value(bit_counter_final_value)) bit_counter
             (.clk(clk), .reset_n(bit_counter_reset_n), .enable(bit_counter_en), .counter_out(bit_counter_out));
     
     //shift_reg signals
-      wire shift_reg_en, shift_reg_reset_n; 
+      reg shift_reg_en, shift_reg_reset_n; 
     //shift_reg instance
         right_shift_reg  shift_reg_inst
             (.clk(clk), .enable(shift_reg_en), .reset_n(shift_reg_reset_n), .shift_reg_input(sampled_bit), .shift_reg_out(data_out));
@@ -56,49 +56,59 @@ module UART_RX #(parameters)
         localparam idle = 2'b00 ;
         localparam check_start = 2'b01 ;
         localparam recive_data = 2'b10 ;
-        localparam stop_bit = 2'b11 ;
+        localparam finish_receive = 2'b11 ;
 
         reg [1:0] state_current, state_next;
 
     //seq state shifting part
-    always @(posedge clk, negedge reset_n ) begin
-        if (~reset_n)
-            state_current <= idle;
-        else
-            state_current <= state_next;
-    end
+        always @(posedge clk, negedge reset_n ) begin
+            if (~reset_n)
+                state_current <= idle;
+            else
+                state_current <= state_next;
+        end
     
 
 
     //next state logic
-    always @(*) begin
+        always @(*) begin
+            /*reset signals reset value is set to the global reset by default
+               the counter enable default value is zero*/
+            ticker_reset_n = reset_n ;
+            bit_counter_reset_n = reset_n;
+            shift_reg_reset_n = reset_n; 
 
-        case (state_current)
+            shift_reg_en = 1'b0;
+            bit_counter_en = 1'b0;
+            ticker_en = 1'b0;
+
+            case (state_current)
+                
+                idle:begin
+                    
+                end 
+
+                check_start:begin
+                    
+                end
+
+                recive_data:begin
+                    
+                end
+
+                finish_receive:begin
+                    
+                end
+
+                default: state_next = idle;
+            endcase
+
             
-            idle:begin
-                
-            end 
-
-            check_start:begin
-                
-            end
-
-            recive_data:begin
-                
-            end
-
-            stop_bit:begin
-                
-            end
-
-            default: state_next = idle;
-        endcase
-
-        
-    end
+        end
 
 
-
+        //assigning enable signals of the counters
+            // assign ticker_enable = ((state_current == check_start | state_current == recive_data) & );
 
 
 
