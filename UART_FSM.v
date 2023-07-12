@@ -49,8 +49,9 @@ module UART_RX #(parameters)
             (.clk(clk), .enable(shift_reg_en), .reset_n(shift_reg_reset_n), .shift_reg_input(sampled_bit), .shift_reg_out(data_out));
 
 
-    //storage element connected to the shift reg module
-        reg [7:0] shift_reg;
+        //storage element connected to the shift reg module
+        //  reg [7:0] shift_reg;
+        //no need for it
 
     //state definition
         localparam idle = 2'b00 ;
@@ -85,19 +86,84 @@ module UART_RX #(parameters)
             case (state_current)
                 
                 idle:begin
-                    
+                    //all reset signals are raised to start a clean process
+                        ticker_reset_n = 1'b0 ;
+                        bit_counter_reset_n = 1'b0;
+                        shift_reg_reset_n = 1'b0; 
+                    //check for RX value
+                        if(RX)
+                            state_next = idle;
+                        else
+                            state_next = check_start;
+
                 end 
 
                 check_start:begin
-                    
+                    //enable the tick counter
+                        ticker_en = 1'b1;
+
+                    if (ticker_out == 8)
+                        sampled_bit = RX;
+
+                    //condition on the sampled bit
+                    if(sampled_bit)
+                        state_next = idle; //meaning it was a glitch
+                    else begin
+                        ticker_reset_n = 1'b0; //to make sure it starts a new count to sample the bits in the next state
+                        state_next = recive_data;
+                    end
                 end
 
                 recive_data:begin
+                    //make sure that the ticker is enabled in this state
+                        ticker_reset_n = 1'b1;
+                        ticker_en = 1'b1;
                     
+                    //state's logic
+                        if (ticker_out == 16) begin
+                            sampled_bit = RX;
+                            bit_counter_en 1'b1;
+                           
+                            if(bit_counter_out < 8)
+                                shift_reg_en = 1'b1;
+                            else
+                                shift_reg_en = 1'b0; // to make sure that it doesn't store the stop bit
+                        end
+                        //and this remains the same till the bit counter is equal to 8 
+                        //which means we've recived the data and expecting the stop bit  
+                            if (bit_counter_out == 8) begin
+                                
+                            //I'm confused about if we need this statment to sample the stop bit or not
+                            //eventually we will see and modify if needed
+                                // if (ticker_out == 16) begin
+                                    // sampled_bit = RX;
+                                   
+                                    if (sampled_bit) //which means it's the stop bit
+                                        state_next = finish_receive;
+                                    
+                                    else    //means that the data was corrupted 
+                                        state_next = idle;
+                                // end
+                            end
+
                 end
 
                 finish_receive:begin
+                    // the perpouse of this state is just to raise the data_ready flag and check for the next bit
+                    //raise the ticker_en to sample the bit following to the stop bit
+                        ticker_en = 1'b1;
                     
+                    //state logic
+                        if(ticker_out == 16)
+                        begin
+                            sampled_bit = RX;
+                        
+                        // check the value of the sampled bit
+                            if(RX) //meaning it's idle 
+                                state_next = idle;
+                            else
+                                state_next = check_start;
+                        end
                 end
 
                 default: state_next = idle;
@@ -107,8 +173,6 @@ module UART_RX #(parameters)
         end
 
 
-        //assigning enable signals of the counters
-            // assign ticker_enable = ((state_current == check_start | state_current == recive_data) & );
 
 
 
