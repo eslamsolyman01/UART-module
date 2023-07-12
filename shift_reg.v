@@ -7,7 +7,7 @@
         so the input it self must be synch with the clk and it must not change twice within the clk period 
         otherwise the module will not meet the expected functionality   */
 
-module right_shift_reg  #(parameter reg_size = 5)
+module right_shift_reg  #(parameter reg_size = 8)
 (
     input clk, enable, reset_n,
     input shift_reg_input, 

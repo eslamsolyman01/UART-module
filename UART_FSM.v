@@ -18,7 +18,7 @@
 module UART_RX 
 (
     input RX, reset_n, sys_clk,
-    output reg data_ready, 
+    output reg data_ready, data_corrupted,
     /*this is a sort of flag which indicates that the receiving process is done and data is ready, may put it at the stop bit state*/
     output [7:0] data_out 
 );
@@ -85,6 +85,7 @@ module UART_RX
 
             //default value of the flag is zero 
             data_ready = 1'b0;
+            data_corrupted =1'b0;
 
             case (state_current)
                 
@@ -105,15 +106,18 @@ module UART_RX
                     //enable the tick counter
                         ticker_en = 1'b1;
 
-                    if (ticker_out == 8)
-                        sampled_bit = RX;
+                        if (ticker_out == 8)begin
+                            sampled_bit = RX;
 
-                    //condition on the sampled bit
-                    if(sampled_bit)
-                        state_next = idle; //meaning it was a glitch
-                    else begin
-                        ticker_reset_n = 1'b0; //to make sure it starts a new count to sample the bits in the next state
-                        state_next = recive_data;
+                        //condition on the sampled bit
+                        if(sampled_bit)begin
+                            state_next = idle; //meaning it was a glitch
+                           
+                        end
+                        else begin
+                            ticker_reset_n = 1'b0; //to make sure it starts a new count to sample the bits in the next state
+                            state_next = recive_data;
+                        end
                     end
                 end
 
@@ -123,7 +127,7 @@ module UART_RX
                         ticker_en = 1'b1;
                     
                     //state's logic
-                        if (ticker_out == 16) begin
+                        if (ticker_out == 15) begin
                             sampled_bit = RX;
                             bit_counter_en = 1'b1;
                            
@@ -132,21 +136,22 @@ module UART_RX
                             else
                                 shift_reg_en = 1'b0; // to make sure that it doesn't store the stop bit
                         end
-                        //and this remains the same till the bit counter is equal to 8 
-                        //which means we've recived the data and expecting the stop bit  
-                            if (bit_counter_out == 8) begin
+                            //and this remains the same till the bit counter is equal to 9
+                            //which means we've recived the data and expecting the stop bit  
+                            if (bit_counter_out == 9) begin
                                 
-                            //I'm confused about if we need this statment to sample the stop bit or not
-                            //eventually we will see and modify if needed
+                                //I'm confused about if we need this statment to sample the stop bit or not
+                                //eventually we will see and modify if needed
                                 // if (ticker_out == 16) begin
                                     // sampled_bit = RX;
                                    
                                     if (sampled_bit) //which means it's the stop bit
                                         state_next = finish_receive;
                                     
-                                    else    //means that the data was corrupted 
+                                    else  begin  //means that the data was corrupted 
+                                     data_corrupted =1'b1;
                                         state_next = idle;
-                                // end
+                                    end
                             end
 
                 end
@@ -157,7 +162,7 @@ module UART_RX
                         ticker_en = 1'b1;
                         data_ready = 1'b1;
                     //state logic
-                        if(ticker_out == 16)
+                        if(ticker_out == 15)
                         begin
                             sampled_bit = RX;
                         
