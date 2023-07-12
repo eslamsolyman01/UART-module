@@ -24,7 +24,7 @@ module UART_RX #(parameters)
 );
 
     //reg to store the sampled_bit
-    reg sampled_bit;
+        reg sampled_bit;
 
     //ticker (mod 16 counter), bit_counter 
         reg [3:0] bit_counter_out, ticker_out;
