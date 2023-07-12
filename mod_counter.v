@@ -2,13 +2,13 @@
 
 //counter module with Tb
 
-module modulus_counter_parametrized #(parameter counter_final_value = 16, parameter counter_bits = 5) 
+module modulus_counter_parametrized #(parameter counter_final_value = 16, parameter counter_bits = 4) 
 (
     input clk, reset_n, enable, 
     output [counter_bits - 1: 0] counter_out
 );
 
-    reg [counter_bits : 0] q_reg, q_next;
+    reg [counter_bits - 1 : 0] q_reg, q_next;
 
     //seq part
         always @(posedge clk, negedge reset_n) begin

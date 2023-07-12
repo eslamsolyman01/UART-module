@@ -12,7 +12,7 @@
       which counts the sampling events which took place then if the number of samples is 8 we shift to the stop_bit state or the idle state 
       I haven't decided yet ..
       
-      and there is another module which is shift register with enbale to store the values of the sampled data  */
+      and there is another module which is shift register with enable to store the values of the sampled data  */
 
 
 module UART_RX #(parameters) 
@@ -27,19 +27,27 @@ module UART_RX #(parameters)
     reg sampled_bit;
 
     //ticker (mod 16 counter), bit_counter 
-        reg [3:0] bit_counter, ticker;
+        reg [:0] bit_counter_out, ticker_out;
     //ticker and bit_counter related signals
-    wire ticker_enable, ticker_reset_n, ticker_out;
-    wire bit_counter_en, bit_counter_reset_n, bit_counter_out;
+    reg ticker_enable, ticker_reset_n;
+    reg bit_counter_en, bit_counter_reset_n;
     
     localparam bit_counter_final_value = 8;
     localparam ticker_final_value = 16;
+    
     //ticker and bit_counter inistantiations
+        modulus_counter_parametrized #(.counter_final_value(ticker_final_value)) ticker 
+            (.clk(clk), .reset_n(ticker_reset_n), .enable(ticker_enable), .counter_out(ticker_out));
 
+        modulus_counter_parametrized #(.counter_final_value(bit_counter_final_value)) bit_counter
+            (.clk(clk), .reset_n(bit_counter_reset_n), .enable(bit_counter_en), .counter_out(bit_counter_out));
     
     //shift_reg signals
-
+      wire shift_reg_en, shift_reg_reset_n; 
     //shift_reg instance
+        right_shift_reg  shift_reg_inst
+            (.clk(clk), .enable(shift_reg_en), .reset_n(shift_reg_reset_n), .shift_reg_input(sampled_bit), .shift_reg_out(data_out));
+
 
     //storage element connected to the shift reg module
         reg [7:0] shift_reg;
